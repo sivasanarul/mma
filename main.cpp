@@ -40,7 +40,7 @@ int main() {
 	vector<double> upp = xmax;
 
 	vector<double> c_MMA = { 1000.0,1000.0 };
-	vector<double> d     = { 1000.0,1000.0 };
+	vector<double> d     = { 1.0,1.0 };
 
 	vector<double> f0val;
 	vector<double>df0dx;
