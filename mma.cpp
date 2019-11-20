@@ -13,11 +13,18 @@
 #include <cmath>
 #include <bits/stdc++.h>
 #include <vector>
+#include "mma.h"
 
 
 using namespace std;
 
-int main() {
+void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> &xmin, vector<double> &xmax, vector<double> &xold1,
+		vector<double> &xold2, vector<double> &f0val, vector<double> &df0dx, vector<double> &fval, vector<double> &dfdx, vector<double> &low,
+		vector<double> &upp, double a0, vector<double> &a, vector<double> &c_MMA, vector<double> &d, double move){
+	cout << "Hello MMA1234!!!" << endl; // prints Hello World!!!
+}
+
+void mma_main() {
 	cout << "Hello MMA!!!" << endl; // prints Hello World!!!
 
 
@@ -350,5 +357,5 @@ int main() {
 
 
 	cout << "Hello MMA!!!" << endl;
-	return 0;
+
 }
