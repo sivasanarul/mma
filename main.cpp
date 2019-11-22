@@ -27,7 +27,7 @@ int main() {
 	vector<double> eeen = { 1.0,1.0,1.0 };
 	vector<double> eeem = { 1.0,1.0 };
 	vector<double> zeron = { 0.0,0.0,0.0 };
-	vector<double> zerom = { 0.0,0.0,0.0 };
+	vector<double> zerom = { 0.0,0.0 };
 
 	vector<double> xval = { 4,3,2 };
 

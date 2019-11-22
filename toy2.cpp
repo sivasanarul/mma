@@ -43,8 +43,11 @@ void toy2(vector<double> &xval,vector<double> &f0val,vector<double> &df0dx, vect
 
 	fval = {fval1,fval2};
 
-	dfdx.insert( dfdx.end(), dfdx1.begin(), dfdx1.end() );
-	dfdx.insert( dfdx.end(), dfdx2.begin(), dfdx2.end() );
+	dfdx.resize(6);
+	for(int i=0;i<dfdx1.size();i++){
+		dfdx[2*i] = dfdx1[i];
+		dfdx[2*i + 1] =  dfdx2[i];
+	}
 
 
 

@@ -53,7 +53,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 	vector<double> gx = {}; gx.resize(4);
 	double sum_volume = 0;
 	vector<double> dely, delz, dellam, diagx, diagxinv, diagy, diagyinv, diaglam, diaglamyi = {};
-	dely.resize(n); delz.resize(n); dellam.resize(n); diagx.resize(n); diagxinv.resize(n); diagy.resize(m); diagyinv.resize(m);
+	dely.resize(m); delz.resize(n); dellam.resize(n); diagx.resize(n); diagxinv.resize(n); diagy.resize(m); diagyinv.resize(m);
 	diaglam.resize(m);diaglamyi.resize(m);
 
 	for (int i = 0; i<m; i++) {
@@ -151,18 +151,23 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 
 	////////////////////////////////////   DIP  ///////////////////////
 
-	double x_intermediate[3] = {};
-	double xsi[3] = {};
-	double eta[3] = {};
-	double epsvecn[3] = {};
-	double epsvecm[4] = {};
-	double pjlam[3], qjlam[3], gvec[3] = {};
-	double rex[3], rey[4], rez, relam[4], rexsi[3], reeta[3], remu[4], rezet, res[4] = {};
+	vector<double> x_intermediate = {}; x_intermediate.resize(n);
+	vector<double> xsi = {}; xsi.resize(n);
+	vector<double> eta = {}; eta.resize(n);
+	vector<double> epsvecn = {}; epsvecn.resize(n);
+	vector<double> epsvecm = {}; epsvecm.resize(n);
+	vector<double> norm_max; norm_max.resize(9);
+	vector<double> pjlam, qjlam, gvec; pjlam.resize(n);qjlam.resize(n);gvec.resize(n);
+	vector<double> rex, rey , relam, rexsi, reeta, remu, res = {};
+	rex.resize(n);rey.resize(m);relam.resize(m);rexsi.resize(n);reeta.resize(n);remu.resize(m);res.resize(m);
+	double  rez,rezet  =0.0;
 	double norm_rex, norm_rey, norm_rez, norm_relam, norm_rexsi, norm_reeta, norm_remu, norm_rezet, norm_res, norm_sum = 0.0;
 	double zet = 1.0, z = 1.0;
-	double dpsidx[3], delx[3], gg[3 * 4] = {};
+	vector<double> dpsidx, delx, gg ;
+	dpsidx.resize(n);delx.resize(n);gg.resize(n*m);
 
-	double blam[m],bb[n],Alam[m*m],AAr1[m*m + m],AAr2[m+1],AA,solution[m+1] = {};
+	vector<double> blam,bb,Alam,AAr1,AAr2,AA,solution = {};
+	blam.resize(m);bb.resize(n);Alam.resize(m*m);AAr1.resize(m*m + m);AAr2.resize(m+1);solution.resize(m+1);
 	for (int i = 0; i<n; i++) {
 		x_intermediate[i] = (alpha[i] + beta[i]) / 2;
 		xsi[i] = std::max(1 / (x_intermediate[i] - alpha[i]), 1.0);
@@ -209,7 +214,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 		for (int i = 0; i < n; i++) {
 			rex[i] = dpsidx[i] - xsi[i] + eta[i];
 			rexsi[i] = xsi[i] * (x_intermediate[i] - alpha[i]) - epsvecn[i];
-			reeta[i] = eta[i] * (beta[i] - xval[i]) - epsvecn[i];
+			reeta[i] = eta[i] * (beta[i] - x_intermediate[i]) - epsvecn[i];
 
 			norm_rex += rex[i] * rex[i];
 			norm_rexsi += rexsi[i] * rexsi[i];
@@ -217,7 +222,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 		}
 		for (int i = 0; i < m; i++) {
 			rey[i] = c_MMA[i] + d[i] - mu[i] - lam[i];
-			relam[i] = grad[i] - 1 - y[i] + s[i] - b[i];
+			relam[i] = grad[i] - a[i]*z - y[i] + s[i] - b[i];
 			remu[i] = mu[i] * y[i] - epsvecm[i];
 			res[i] = lam[i] * s[i] - epsvecm[i];
 
@@ -237,6 +242,18 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 		norm_rez = rez*rez;
 		norm_rezet = rezet*rezet;
 		norm_sum = norm_rex + norm_rey + norm_rez + norm_relam + norm_rexsi + norm_reeta + norm_remu + norm_rezet + norm_res;
+		norm_sum = std::pow(norm_sum, 1.0/2.0);
+		norm_max[0]= *max_element(rex.begin(),rex.end());
+		norm_max[1]= *max_element(rexsi.begin(),rexsi.end());
+		norm_max[2]= *max_element(reeta.begin(),reeta.end());
+		norm_max[3]= *max_element(rey.begin(),rey.end());
+		norm_max[4]= *max_element(relam.begin(),relam.end());
+		norm_max[5]= *max_element(remu.begin(),remu.end());
+		norm_max[6]= *max_element(res.begin(),res.end());
+		norm_max[7]= rez;
+		norm_max[8]= rezet;
+		double residmax = *max_element(norm_max.begin(),norm_max.end());
+
 		int ittt = 0;
 		while (ittt < 200) {
 			ittt++;
@@ -248,14 +265,15 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 					qjlam[i] += qij[i * m + j] * lam[j];
 				}
 			}
+			std::fill (grad.begin(),grad.end(),0);
 			for (int j = 0; j < m; j++) {
 				for (int i = 0; i < n; i++) {
-					grad[j] += pij[i * m + j] / (upp[i] - xval[i]) + qij[i * m + j] / (xval[i] - low[i]);
+					grad[j] += pij[i * m + j] / (upp[i] - x_intermediate[i]) + qij[i * m + j] / (x_intermediate[i] - low[i]);
 				}
 
 			}
 			for (int i = 0; i < n; i++) {
-				dpsidx[i] = pjlam[i] / (std::pow(upp[i] - xval[i], 2.0)) - qjlam[i] / (std::pow(xval[i] - low[i], 2.0));
+				dpsidx[i] = pjlam[i] / (std::pow(upp[i] - x_intermediate[i], 2.0)) - qjlam[i] / (std::pow(x_intermediate[i] - low[i], 2.0));
 				delx[i] = dpsidx[i] - epsvecn[i] / (x_intermediate[i] - alpha[i]) + epsvecn[i] / (beta[i] - x_intermediate[i]);
 			}
 
@@ -270,8 +288,8 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 
 			}
 			for (int i = 0; i < n; i++) {
-				diagx[i] = pjlam[i] / (std::pow(upp[i] - xval[i], 3.0)) + qjlam[i] / (std::pow(xval[i] - low[i], 3.0));
-				diagx[i] = diagx[i] * 2 + xsi[i] / (xval[i] - alpha[i]) + eta[i] / (beta[i] - xval[i]);
+				diagx[i] = pjlam[i] / (std::pow(upp[i] - x_intermediate[i], 3.0)) + qjlam[i] / (std::pow(x_intermediate[i] - low[i], 3.0));
+				diagx[i] = diagx[i] * 2 + xsi[i] / (x_intermediate[i] - alpha[i]) + eta[i] / (beta[i] - x_intermediate[i]);
 				diagxinv[i] = 1 / diagx[i];
 			}
 
@@ -285,16 +303,21 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 
 			for (int i = 0; i < n; i++) {
 				for (int j = 0; j < m; j++) {
-					gg[i*n + j] = pij[i*n + j] * (1 / (std::pow(upp[i] - xval[i], 2.0))) - qij[i*n + j] * (1 / (std::pow(upp[i] - xval[i], 2.0)));
+					gg[i*m + j] = pij[i*m + j] * (1 / (std::pow(upp[i] - x_intermediate[i], 2.0))) - qij[i*m + j] * (1 / (std::pow(x_intermediate[i] - low[i], 2.0)));
 				}
 			}
 
 		    if (m<n){
+		    	for (int j = 0; j < m; j++) {
+		    		blam[j] = dellam[j]+ dely[j]/diagy[j];
+		    		for (int i = 0; i < n; i++) {
+		    			blam[j] = blam[j] - gg[i*m+j]  *delx[i]/diagx[i];
+		    					}
+		    				}
 
 
 
-
-
+		    	cout << "so far so good";
 
 		    }
 
