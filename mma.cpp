@@ -167,6 +167,8 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 	dpsidx.resize(n);delx.resize(n);gg.resize(n*m);
 
 	vector<double> blam,bb,Alam,AAr1,AAr2,AA,solution = {};
+	vector<double> stepalfa, stepbeta = {};stepalfa.resize(m);stepbeta.resize(m);
+	vector<double> dlam, dx,dxsi,deta,dy,ds; double dz = 0.0; double dzet=0.0;
 	blam.resize(m);bb.resize(n);Alam.resize(m*m);AAr1.resize(m*m + m);AAr2.resize(m+1);solution.resize(m+1);
 	for (int i = 0; i<n; i++) {
 		x_intermediate[i] = (alpha[i] + beta[i]) / 2;
@@ -355,6 +357,40 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 		    	vector<double> AAr1; vector<double> AAr2;
 		    	vector<double> solution; solution.resize(bb.size());
 		    	LU_solver(AA,bb,solution);
+		    	vector<double> ggdotdlam = {}; ggdotdlam.resize(3);
+                std::copy(solution.begin(),solution.begin() +m,dlam.begin());
+                dz = solution[m+1];
+
+                for(int i= 0;i<n;i++){
+                	for(int j=0;j<m;j++){
+                	ggdotdlam[i] = gg[i*m+j]*dlam[j];}
+                }
+                for(int i=0;i<n;i++){
+                	dx[i] = -delx[i]/diagx[i]- ggdotdlam[i]/diagx[i];
+                	dxsi[i] = -eta[i] + 1/(x_intermediate[i]-alpha[i]) + (xsi[i]*dx[i])/(x_intermediate[i]-alpha[i]);////-
+                    deta[i] = -eta[i] + 1/(beta[i]-x_intermediate[i]) + (eta[i]*dx[i])/(beta[i]-x_intermediate[i]);
+
+                }
+                dzet = -zet + epsi/z - dz/z;
+                for(int i=0;i<m;i++){
+                   dy[i] = -dely[i]/diagy[i]- dlam[i]/diagy[i];
+                   ds[i]   = -s[i] + 1/lam[i] - (s[i]*dlam[i])/lam[i];
+                 }
+
+
+                for (int i=0;i<n;i++){
+                	stepalfa[i] = -1.01*dx[i]/(x_intermediate[i]-alfa[i]);
+                	stepbeta[i] = 1.01/dx[i]/(beta[i]-x_intermediate[i]);
+                }
+                double stmalfa = *max_element(stepalfa.begin(),stepalfa.end());
+                double stmbeta = *max_element(stepbeta.begin(),stepbeta.end());
+                double stamlbe = max(stmalfa,stmbeta);
+                double stmalbexx = max(stamlbe,stmxx);
+                double stminv =  std::max(stmalbexx,1.0);
+                double steg = 1.0/stminv;
+
+
+
 
 
 		    	cout << "so far so good";
