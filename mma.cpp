@@ -203,6 +203,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 				qjlam[i] += qij[i * m + j] * lam[j];
 			}
 		}
+		std::fill (grad.begin(),grad.end(),0);
 		for (int j = 0; j < m; j++) {
 			for (int i = 0; i < n; i++) {
 				grad[j] += pij[i * m + j] / (upp[i] - x_intermediate[i]) + qij[i * m + j] / (x_intermediate[i] - low[i]);
@@ -213,21 +214,21 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 			dpsidx[i] = pjlam[i] / (std::pow(upp[i] - x_intermediate[i], 2.0)) - qjlam[i] / (std::pow(x_intermediate[i] - low[i], 2.0));
 		}
 
-
+		norm_rex = 0.0; norm_rey = 0.0; norm_rez = 0.0; norm_relam = 0.0;norm_rexsi = 0.0; norm_reeta = 0.0; norm_remu = 0.0; norm_rezet = 0.0; norm_res = 0.0; norm_sum = 0.0;
 		for (int i = 0; i < n; i++) {
-			rex[i] = dpsidx[i] - xsi[i] + eta[i];
-			rexsi[i] = xsi[i] * (x_intermediate[i] - alpha[i]) - epsvecn[i];
-			reeta[i] = eta[i] * (beta[i] - x_intermediate[i]) - epsvecn[i];
+			rex[i] =std::abs( dpsidx[i] - xsi[i] + eta[i]);
+			rexsi[i] = std::abs(xsi[i] * (x_intermediate[i] - alpha[i]) - epsvecn[i]);
+			reeta[i] =std::abs( eta[i] * (beta[i] - x_intermediate[i]) - epsvecn[i]);
 
 			norm_rex += rex[i] * rex[i];
 			norm_rexsi += rexsi[i] * rexsi[i];
 			norm_reeta += reeta[i] * reeta[i];
 		}
 		for (int i = 0; i < m; i++) {
-			rey[i] = c_MMA[i] + d[i] - mu[i] - lam[i];
-			relam[i] = grad[i] - a[i]*z - y[i] + s[i] - b[i];
-			remu[i] = mu[i] * y[i] - epsvecm[i];
-			res[i] = lam[i] * s[i] - epsvecm[i];
+			rey[i] = std::abs(c_MMA[i] + d[i] - mu[i] - lam[i]);
+			relam[i] =std::abs( grad[i] - a[i]*z - y[i] + s[i] - b[i]);
+			remu[i] = std::abs(mu[i] * y[i] - epsvecm[i]);
+			res[i] = std::abs(lam[i] * s[i] - epsvecm[i]);
 
 			norm_rey += rey[i] * rey[i];
 			norm_relam += relam[i] * relam[i];
@@ -240,10 +241,11 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 			a_lam += a[i]*lam[i];
 		}
 
-		rez = a0 - zet - a_lam;
-		rezet = zet*z - epsi;
+		rez = std::abs(a0 - zet - a_lam);
+		rezet = std::abs(zet*z - epsi);
 		norm_rez = rez*rez;
 		norm_rezet = rezet*rezet;
+
 		norm_sum = norm_rex + norm_rey + norm_rez + norm_relam + norm_rexsi + norm_reeta + norm_remu + norm_rezet + norm_res;
 		norm_sum = std::pow(norm_sum, 1.0/2.0);
 		norm_max[0]= *max_element(rex.begin(),rex.end());
@@ -258,7 +260,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 		double residmax = *max_element(norm_max.begin(),norm_max.end());
 
 		int ittt = 0;
-		while (ittt < 200) {
+		while (ittt < 200 && residmax>0.9*epsi) {
 			ittt++;
 			for (int i = 0; i < n; i++) {
 				pjlam[i] = p0[i];
@@ -311,228 +313,232 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 				}
 			}
 
-		    if (m<n){
-		    	for (int j = 0; j < m; j++) {
-		    		blam[j] = dellam[j]+ dely[j]/diagy[j];
-		    		for (int i = 0; i < n; i++) {
-		    			blam[j] = blam[j] - gg[i*m+j]  *delx[i]/diagx[i];
-		    					}
-		    				}
+			for (int j = 0; j < m; j++) {
+				blam[j] = dellam[j]+ dely[j]/diagy[j];
+				for (int i = 0; i < n; i++) {
+					blam[j] = blam[j] - gg[i*m+j]  *delx[i]/diagx[i];
+							}
+						}
 
 
-		        //vector<vector<int> > vec( n , vector<int> (m, 0));
-		    	vector<double> bb = {};
-		    	bb.insert(bb.end(),blam.begin(),blam.end());
-		    	bb.push_back(delz);
+			//vector<vector<int> > vec( n , vector<int> (m, 0));
+			vector<double> bb = {};
+			bb.insert(bb.end(),blam.begin(),blam.end());
+			bb.push_back(delz);
 
-		    	vector<double> AAr123 = {}; AAr123.resize(n*m);
-
-
-		    	for (int i=0;i<n;i++){
-		    		for (int j=0;j<m;j++){
-		    		    AAr123[j*n+i] = diagxinv[i]*gg[i*m+j];
-		    		}
-		    	}
-		    	vector<double> AA = {}; AA.resize(m*m);
-
-		    	double sum = 0;
-		        for (int i = 0; i < m; i++)
-		          {
-		            for (int j = 0; j < m; j++)
-		            {
-		                sum = 0;
-		                for (int k = 0; k < n; k++)
-		                {
-		                    sum = sum + AAr123[n*i+k] * gg[m*k+j];
-		                }
-		                AA[i+j*m] += sum;
-		            }
-		            AA[(m+1)*i] += diaglamyi[i];
-		        }
-		        AA.insert(AA.end(),a.begin(),a.end());
-		        vector<double> AA1 = {}; AA1.insert(AA1.end(),a.begin(),a.end());
-		        AA1.push_back(-zet/z);
-		        for (int i =0;i<m+1;i++){
-		        	AA.emplace(AA.begin()+(i+1)*m+i,AA1[i]);
-		        }
-		    	vector<double> AAr1; vector<double> AAr2;
-		    	vector<double> solution; solution.resize(bb.size());
-		    	LU_solver(AA,bb,solution);
-		    	vector<double> ggdotdlam = {}; ggdotdlam.resize(3);
-                std::copy(solution.begin(),solution.begin() +m,dlam.begin());
-                dz = solution[m];
-
-                for(int i= 0;i<n;i++){
-                	for(int j=0;j<m;j++){
-                	ggdotdlam[i] += gg[i*m+j]*dlam[j];}
-                }
-                for(int i=0;i<n;i++){
-                	dx[i] = -delx[i]/diagx[i]- ggdotdlam[i]/diagx[i];
-                	dxsi[i] = -xsi[i] + 1/(x_intermediate[i]-alpha[i]) - (xsi[i]*dx[i])/(x_intermediate[i]-alpha[i]);////-
-                    deta[i] = -eta[i] + 1/(beta[i]-x_intermediate[i]) + (eta[i]*dx[i])/(beta[i]-x_intermediate[i]);
-
-                }
-                dzet = -zet + epsi/z - dz/z;
-                for(int i=0;i<m;i++){
-                   dy[i] = -dely[i]/diagy[i]+ dlam[i]/diagy[i];
-                   ds[i]   = -s[i] + 1/lam[i] - (s[i]*dlam[i])/lam[i];
-                   dmu[i]  = -mu[i] + 1/y[i] - (mu[i]*dy[i])/y[i];
-                 }
+			vector<double> AAr123 = {}; AAr123.resize(n*m);
 
 
-                for (int i=0;i<n;i++){
-                	stepalfa[i] = -1.01*dx[i]/(x_intermediate[i]-alpha[i]);
-                	stepbeta[i] = 1.01*dx[i]/(beta[i]-x_intermediate[i]);
-                }
-
-                vector<double> stepd; stepd.resize(8);
-
-                vector<double> stepdy;stepdy.resize(m);
-                std::transform (dy.begin(), dy.end(), y.begin(), stepdy.begin(), std::divides<double>());
-                std::for_each(stepdy.begin(), stepdy.end(), [](double &el){el *= -1.01; });
-                stepd[0]  = *max_element(stepdy.begin(),stepdy.end());
-                stepd[1] = -1.01*dz/z;
-
-                vector<double> stepdlam;stepdlam.resize(m);
-                std::transform (dlam.begin(), dlam.end(), lam.begin(), stepdlam.begin(), std::divides<double>());
-                std::for_each(stepdlam.begin(), stepdlam.end(), [](double &el){el *= -1.01; });
-                stepd[2]  = *max_element(stepdlam.begin(),stepdlam.end());
-
-                vector<double> stepdxsi;stepdxsi.resize(n);
-                std::transform (dxsi.begin(), dxsi.end(), xsi.begin(), stepdxsi.begin(), std::divides<double>());
-                std::for_each(stepdxsi.begin(), stepdxsi.end(), [](double &el){el *= -1.01; });
-                stepd[3]  = *max_element(stepdxsi.begin(),stepdxsi.end());
-
-                vector<double> stepdeta;stepdeta.resize(n);
-                std::transform (deta.begin(), deta.end(), eta.begin(), stepdeta.begin(), std::divides<double>());
-                std::for_each(stepdeta.begin(), stepdeta.end(), [](double &el){el *= -1.01; });
-                stepd[4]  = *max_element(stepdeta.begin(),stepdeta.end());
-
-                vector<double> stepdmu;stepdmu.resize(m);
-                std::transform (dmu.begin(), dmu.end(), mu.begin(), stepdmu.begin(), std::divides<double>());
-                std::for_each(stepdmu.begin(), stepdmu.end(), [](double &el){el *= -1.01; });
-                stepd[5]  = *max_element(stepdmu.begin(),stepdmu.end());
-
-                stepd[6]  = 1.01*dzet/zet;
-                vector<double> stepds;stepds.resize(m);
-                std::transform (ds.begin(), ds.end(), s.begin(), stepds.begin(), std::divides<double>());
-                std::for_each(stepds.begin(), stepds.end(), [](double &el){el *= -1.01; });
-                stepd[7]  = *max_element(stepds.begin(),stepds.end());
-
-                double stmalfa = *max_element(stepalfa.begin(),stepalfa.end());
-                double stmbeta = *max_element(stepbeta.begin(),stepbeta.end());
-                double stamlbe = max(stmalfa,stmbeta);
-                double stmxx =  *max_element(stepd.begin(),stepd.end());
-                double stmalbexx = std::max(stamlbe,stmxx);
-				double stminv = std::max(stmalbexx,1.0);
-				double steg   = 1.0/stminv;
-
-				vector<double> xold(x_intermediate);
-				vector<double> yold(y);
-				vector<double> zold(z);
-				vector<double> lamold(lam);
-				vector<double> xsiold(xsi);
-				vector<double> muold(mu);
-				vector<double> etaold(eta);
-				double zetold  = zet;
-				vector<double> sold(s);
-                //double stmalbexx = max(stamlbe,stmxx);
-                //double stminv =  std::max(stmalbexx,1.0);
-                //double steg = 1.0/stminv;
-				int itto = 0;
-				double resinew = 2*norm_sum;
-				while (resinew > norm_sum){
-					itto = itto +1;
-					for (int i=0;i<m;i++){
-						y[i] = yold[i] + steg*dy[i];
-						lam[i] = lamold + steg*dlam[i];
-						mu[i]  = muold + steg*dmu[i];
-					    s[i] = sold + steg*ds;
-					}
-					for (int i=0;i<n;i++){
-						xsi[i] = xsiold + steg*dxsi[i];
-						x_intermediate[i]   = x_intermediate[i] + steg*dx[i];
-						eta[i]   =  etaold[i] + steg*deta[i];
-					}
-					z = zold + steg*dz;
-                    zet = zetold + steg*dzet;
-        			for (int i = 0; i < n; i++) {
-        				pjlam[i] = p0[i];
-        				qjlam[i] = q0[i];
-        				for (int j = 0; j < m; j++) {
-        					pjlam[i] += pij[i * m + j] * lam[j];
-        					qjlam[i] += qij[i * m + j] * lam[j];
-        				}
-        			}
-        			for (int i = 0; i < n; i++) {
-        				for (int j = 0; j < m; j++) {
-        					gg[i*m + j] = pij[i*m + j] * (1 / (std::pow(upp[i] - x_intermediate[i], 2.0))) - qij[i*m + j] * (1 / (std::pow(x_intermediate[i] - low[i], 2.0)));
-        				}
-        			}
-        			for (int i = 0; i < n; i++) {
-        				dpsidx[i] = pjlam[i] / (std::pow(upp[i] - x_intermediate[i], 2.0)) - qjlam[i] / (std::pow(x_intermediate[i] - low[i], 2.0));
-        			}
-
-
-					for (int i = 0; i < n; i++) {
-						rex[i] = dpsidx[i] - xsi[i] + eta[i];
-						rexsi[i] = xsi[i] * (x_intermediate[i] - alpha[i]) - epsvecn[i];
-						reeta[i] = eta[i] * (beta[i] - x_intermediate[i]) - epsvecn[i];
-
-						norm_rex += rex[i] * rex[i];
-						norm_rexsi += rexsi[i] * rexsi[i];
-						norm_reeta += reeta[i] * reeta[i];
-					}
-					for (int i = 0; i < m; i++) {
-						rey[i] = c_MMA[i] + d[i] - mu[i] - lam[i];
-						relam[i] = grad[i] - a[i]*z - y[i] + s[i] - b[i];
-						remu[i] = mu[i] * y[i] - epsvecm[i];
-						res[i] = lam[i] * s[i] - epsvecm[i];
-
-						norm_rey += rey[i] * rey[i];
-						norm_relam += relam[i] * relam[i];
-						norm_remu += remu[i] * remu[i];
-						norm_res += res[i] * res[i];
-
-					}
-					double a_lam = 0.0;
-					for (int i = 0; i<m; i++) {
-						a_lam += a[i]*lam[i];
-					}
-
-					rez = a0 - zet - a_lam;
-					rezet = zet*z - epsi;
-					norm_rez = rez*rez;
-					norm_rezet = rezet*rezet;
-					norm_sum = norm_rex + norm_rey + norm_rez + norm_relam + norm_rexsi + norm_reeta + norm_remu + norm_rezet + norm_res;
-					norm_sum = std::pow(norm_sum, 1.0/2.0);
-					steg = steg/2;
+			for (int i=0;i<n;i++){
+				for (int j=0;j<m;j++){
+					AAr123[j*n+i] = diagxinv[i]*gg[i*m+j];
 				}
-		    	cout << "so far so good";
+			}
+			vector<double> AA = {}; AA.resize(m*m);
 
-		    }
+			double sum = 0;
+			for (int i = 0; i < m; i++)
+			  {
+				for (int j = 0; j < m; j++)
+				{
+					sum = 0;
+					for (int k = 0; k < n; k++)
+					{
+						sum = sum + AAr123[n*i+k] * gg[m*k+j];
+					}
+					AA[i+j*m] += sum;
+				}
+				AA[(m+1)*i] += diaglamyi[i];
+			}
+			AA.insert(AA.end(),a.begin(),a.end());
+			vector<double> AA1 = {}; AA1.insert(AA1.end(),a.begin(),a.end());
+			AA1.push_back(-zet/z);
+			for (int i =0;i<m+1;i++){
+				AA.emplace(AA.begin()+(i+1)*m+i,AA1[i]);
+			}
+			vector<double> AAr1; vector<double> AAr2;
+			vector<double> solution; solution.resize(bb.size());
+			LU_solver(AA,bb,solution);
+			vector<double> ggdotdlam = {}; ggdotdlam.resize(3);
+			std::copy(solution.begin(),solution.begin() +m,dlam.begin());
+			dz = solution[m];
 
-		    /*for (int i=0;i<m;i++){
-		    	dy[i] = -dely[i]/diagy[i] + dlam[i]/diagy[i];
-		    	dmu[i] = -mu[i] + epsvecm[i]/y[i] - (mu[i]*dy[i])/y[i];
-		    	ds[i]  = -s[i] + epsvecm[i]/lam[i] - (s[i]*dlam[i])/lam[i];
-		        }
+			for(int i= 0;i<n;i++){
+				for(int j=0;j<m;j++){
+				ggdotdlam[i] += gg[i*m+j]*dlam[j];}
+			}
+			for(int i=0;i<n;i++){
+				dx[i] = -delx[i]/diagx[i]- ggdotdlam[i]/diagx[i];
+				dxsi[i] = -xsi[i] + 1/(x_intermediate[i]-alpha[i]) - (xsi[i]*dx[i])/(x_intermediate[i]-alpha[i]);////-
+				deta[i] = -eta[i] + 1/(beta[i]-x_intermediate[i]) + (eta[i]*dx[i])/(beta[i]-x_intermediate[i]);
 
-		    for (int i=0;i<n;i++){
-		   		    	dxsi[i] = -xsi[i] + epsvecn[i]/(xval[i]-alpha[i]) - (xsi[i]*dx[i])/(xval[i]-alpha[i]);
-		   		    	deta[i] = -eta[i] + epsvecn[i]/(beta[i]-xval[i])  - (eta[i]*dx[i])/(beta[i]-xval[i]);
+			}
+			dzet = -zet + epsi/z - dz/z;
+			for(int i=0;i<m;i++){
+			   dy[i] = -dely[i]/diagy[i]+ dlam[i]/diagy[i];
+			   ds[i]   = -s[i] + 1/lam[i] - (s[i]*dlam[i])/lam[i];
+			   dmu[i]  = -mu[i] + 1/y[i] - (mu[i]*dy[i])/y[i];
+			 }
 
 
-		   		}
+			for (int i=0;i<n;i++){
+				stepalfa[i] = -1.01*dx[i]/(x_intermediate[i]-alpha[i]);
+				stepbeta[i] = 1.01*dx[i]/(beta[i]-x_intermediate[i]);
+			}
 
-		    dzet = -zet + epsi/z - zet*dz/z; */
+			vector<double> stepd; stepd.resize(8);
 
+			vector<double> stepdy;stepdy.resize(m);
+			std::transform (dy.begin(), dy.end(), y.begin(), stepdy.begin(), std::divides<double>());
+			std::for_each(stepdy.begin(), stepdy.end(), [](double &el){el *= -1.01; });
+			stepd[0]  = *max_element(stepdy.begin(),stepdy.end());
+			stepd[1] = -1.01*dz/z;
 
+			vector<double> stepdlam;stepdlam.resize(m);
+			std::transform (dlam.begin(), dlam.end(), lam.begin(), stepdlam.begin(), std::divides<double>());
+			std::for_each(stepdlam.begin(), stepdlam.end(), [](double &el){el *= -1.01; });
+			stepd[2]  = *max_element(stepdlam.begin(),stepdlam.end());
+
+			vector<double> stepdxsi;stepdxsi.resize(n);
+			std::transform (dxsi.begin(), dxsi.end(), xsi.begin(), stepdxsi.begin(), std::divides<double>());
+			std::for_each(stepdxsi.begin(), stepdxsi.end(), [](double &el){el *= -1.01; });
+			stepd[3]  = *max_element(stepdxsi.begin(),stepdxsi.end());
+
+			vector<double> stepdeta;stepdeta.resize(n);
+			std::transform (deta.begin(), deta.end(), eta.begin(), stepdeta.begin(), std::divides<double>());
+			std::for_each(stepdeta.begin(), stepdeta.end(), [](double &el){el *= -1.01; });
+			stepd[4]  = *max_element(stepdeta.begin(),stepdeta.end());
+
+			vector<double> stepdmu;stepdmu.resize(m);
+			std::transform (dmu.begin(), dmu.end(), mu.begin(), stepdmu.begin(), std::divides<double>());
+			std::for_each(stepdmu.begin(), stepdmu.end(), [](double &el){el *= -1.01; });
+			stepd[5]  = *max_element(stepdmu.begin(),stepdmu.end());
+
+			stepd[6]  = 1.01*dzet/zet;
+			vector<double> stepds;stepds.resize(m);
+			std::transform (ds.begin(), ds.end(), s.begin(), stepds.begin(), std::divides<double>());
+			std::for_each(stepds.begin(), stepds.end(), [](double &el){el *= -1.01; });
+			stepd[7]  = *max_element(stepds.begin(),stepds.end());
+
+			double stmalfa = *max_element(stepalfa.begin(),stepalfa.end());
+			double stmbeta = *max_element(stepbeta.begin(),stepbeta.end());
+			double stamlbe = max(stmalfa,stmbeta);
+			double stmxx =  *max_element(stepd.begin(),stepd.end());
+			double stmalbexx = std::max(stamlbe,stmxx);
+			double stminv = std::max(stmalbexx,1.0);
+			double steg   = 1.0/stminv;
+
+			vector<double> xold(x_intermediate);
+			vector<double> yold(y);
+			double zold = z;
+			vector<double> lamold(lam);
+			vector<double> xsiold(xsi);
+			vector<double> muold(mu);
+			vector<double> etaold(eta);
+			double zetold  = zet;
+			vector<double> sold(s);
+			//double stmalbexx = max(stamlbe,stmxx);
+			//double stminv =  std::max(stmalbexx,1.0);
+			//double steg = 1.0/stminv;
+			int itto = 0;
+			double resinew = 2*norm_sum;
+			while (resinew > norm_sum && itto<50){
+				itto = itto +1;
+				for (int i=0;i<m;i++){
+					y[i] = yold[i] + steg*dy[i];
+					lam[i] = lamold[i] + steg*dlam[i];
+					mu[i]  = muold[i] + steg*dmu[i];
+					s[i] = sold[i] + steg*ds[i];
+				}
+				for (int i=0;i<n;i++){
+					xsi[i] = xsiold[i] + steg*dxsi[i];
+					x_intermediate[i]   = x_intermediate[i] + steg*dx[i];
+					eta[i]   =  etaold[i] + steg*deta[i];
+				}
+				z = zold + steg*dz;
+				zet = zetold + steg*dzet;
+				for (int i = 0; i < n; i++) {
+					pjlam[i] = p0[i];
+					qjlam[i] = q0[i];
+					for (int j = 0; j < m; j++) {
+						pjlam[i] += pij[i * m + j] * lam[j];
+						qjlam[i] += qij[i * m + j] * lam[j];
+					}
+				}
+				std::fill (grad.begin(),grad.end(),0);
+				for (int j = 0; j < m; j++) {
+					for (int i = 0; i < n; i++) {
+						grad[j] += pij[i * m + j] / (upp[i] - x_intermediate[i]) + qij[i * m + j] / (x_intermediate[i] - low[i]);
+					}
+
+				}
+				for (int i = 0; i < n; i++) {
+					dpsidx[i] = pjlam[i] / (std::pow(upp[i] - x_intermediate[i], 2.0)) - qjlam[i] / (std::pow(x_intermediate[i] - low[i], 2.0));
+				}
+
+				norm_rex = 0.0; norm_rey = 0.0; norm_rez = 0.0; norm_relam = 0.0; norm_rexsi = 0.0; norm_reeta = 0.0; norm_remu = 0.0; norm_rezet = 0.0; norm_res = 0.0;
+				for (int i = 0; i < n; i++) {
+					rex[i] =std::abs( dpsidx[i] - xsi[i] + eta[i]);
+					rexsi[i] = std::abs(xsi[i] * (x_intermediate[i] - alpha[i]) - epsvecn[i]);
+					reeta[i] =std::abs( eta[i] * (beta[i] - x_intermediate[i]) - epsvecn[i]);
+
+					norm_rex += rex[i] * rex[i];
+					norm_rexsi += rexsi[i] * rexsi[i];
+					norm_reeta += reeta[i] * reeta[i];
+				}
+				for (int i = 0; i < m; i++) {
+					rey[i] = std::abs(c_MMA[i] + d[i] - mu[i] - lam[i]);
+					relam[i] =std::abs( grad[i] - a[i]*z - y[i] + s[i] - b[i]);
+					remu[i] = std::abs(mu[i] * y[i] - epsvecm[i]);
+					res[i] = std::abs(lam[i] * s[i] - epsvecm[i]);
+
+					norm_rey += rey[i] * rey[i];
+					norm_relam += relam[i] * relam[i];
+					norm_remu += remu[i] * remu[i];
+					norm_res += res[i] * res[i];
+
+				}
+				double a_lam = 0.0;
+				for (int i = 0; i<m; i++) {
+					a_lam += a[i]*lam[i];
+				}
+
+				rez = std::abs(a0 - zet - a_lam);
+				rezet = std::abs(zet*z - epsi);
+				norm_rez = rez*rez;
+				norm_rezet = rezet*rezet;
+				resinew = norm_rex + norm_rey + norm_rez + norm_relam + norm_rexsi + norm_reeta + norm_remu + norm_rezet + norm_res;
+				resinew = std::pow(resinew, 1.0/2.0);
+				steg = steg/2;
+			    }
+			norm_sum = resinew;
+			steg = 2*steg;
+			norm_max[0]= *max_element(rex.begin(),rex.end());
+			norm_max[1]= *max_element(rexsi.begin(),rexsi.end());
+			norm_max[2]= *max_element(reeta.begin(),reeta.end());
+			norm_max[3]= *max_element(rey.begin(),rey.end());
+			norm_max[4]= *max_element(relam.begin(),relam.end());
+			norm_max[5]= *max_element(remu.begin(),remu.end());
+			norm_max[6]= *max_element(res.begin(),res.end());
+			norm_max[7]= rez;
+			norm_max[8]= rezet;
+			residmax = *max_element(norm_max.begin(),norm_max.end());
+			cout << "so far so good";
 
 
 		}
-		epsi = 0;
+		epsi = 0.1*epsi;
 	}
+	vector<double> xmma(x_intermediate);
+	vector<double> ymma(y);
+	vector<double> zmma(z);
+	vector<double> lamma(lam);
+	vector<double> xsimma(xsi);
+	vector<double> etamma(eta);
+	vector<double> mumma(mu);
+	vector<double> zetmma(zet);
+	vector<double> smma(s);
+
 
 
 
