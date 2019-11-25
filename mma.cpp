@@ -225,7 +225,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 			norm_reeta += reeta[i] * reeta[i];
 		}
 		for (int i = 0; i < m; i++) {
-			rey[i] = std::abs(c_MMA[i] + d[i] - mu[i] - lam[i]);
+			rey[i] = std::abs(c_MMA[i] + d[i]*y[i] - mu[i] - lam[i]);
 			relam[i] =std::abs( grad[i] - a[i]*z - y[i] + s[i] - b[i]);
 			remu[i] = std::abs(mu[i] * y[i] - epsvecm[i]);
 			res[i] = std::abs(lam[i] * s[i] - epsvecm[i]);
@@ -487,7 +487,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 					norm_reeta += reeta[i] * reeta[i];
 				}
 				for (int i = 0; i < m; i++) {
-					rey[i] = std::abs(c_MMA[i] + d[i] - mu[i] - lam[i]);
+					rey[i] = std::abs(c_MMA[i] + d[i]*y[i] - mu[i] - lam[i]);
 					relam[i] =std::abs( grad[i] - a[i]*z - y[i] + s[i] - b[i]);
 					remu[i] = std::abs(mu[i] * y[i] - epsvecm[i]);
 					res[i] = std::abs(lam[i] * s[i] - epsvecm[i]);
