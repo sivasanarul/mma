@@ -56,15 +56,24 @@ int main() {
 	f0val.resize(1);
 	df0dx.resize(3);
 	fval.resize(2);
-
-
+	vector<double> xmma,ymma,out_lam,out_xsi,out_eta,out_mu,out_s,out_low,out_upp={};
+	double zmma = 0.0;
+    double out_zet = 0.0;
 	toy2(xval,f0val,df0dx,fval,dfdx );
 
-	 mma_main1( n,m,outeriter,xval,xmin,xmax,xold1,
-				xold2,f0val,df0dx,fval,dfdx,low,
-				upp,a0,a,c_MMA,d,move);
-
-
+double kkttol = 0.0; double kktnorm = 10; int outit = 0;
+while (kktnorm>kkttol && outit < maxoutit){
+	outit++;
+	mma_main1( n,m,outeriter,xval,xmin,xmax,xold1,
+					xold2,f0val,df0dx,fval,dfdx,low,
+					upp,a0,a,c_MMA,d,move,
+					xmma,ymma,zmma,out_lam,out_xsi,out_eta,out_mu,out_zet,out_s,out_low,out_upp);
+	xold2=xold1;
+	xold1=xval;
+	xval=xmma;
+	toy2(xval,f0val,df0dx,fval,dfdx );
+	kktcheck(m,n,xmma,ymma,zmma,out_lam,out_xsi,out_eta,out_mu,out_zet,out_s,xmin,xmax,df0dx,fval,dfdx,a0,a,c_MMA,d);
+}
 cout<< "MMA done";
 
 	return 0;

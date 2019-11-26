@@ -28,7 +28,7 @@ void toy2(vector<double> &xval,vector<double> &f0val,vector<double> &df0dx, vect
 
 	vector <double> fconst1 = {5,2,1};
 	vector <double> fconst2 = {3,4,3};
-	double fval1,fval2 = 0;
+	double fval1=0,fval2 = 0;
 
 	vector <double> dfdx1,dfdx2;
 	for (int i=0;i<xval.size();i++){
