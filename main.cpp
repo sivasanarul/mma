@@ -75,6 +75,7 @@ while (kktnorm>kkttol && outit < maxoutit){
 	kktcheck(m,n,xmma,ymma,zmma,out_lam,out_xsi,out_eta,out_mu,out_zet,out_s,xmin,xmax,df0dx,fval,dfdx,a0,a,c_MMA,d);
 }
 cout<< "MMA done";
-
+cout<< "\n";
+cout<< xmma[0]<< "\t"<<xmma[1]<<"\t"<<xmma[2];
 	return 0;
 }
