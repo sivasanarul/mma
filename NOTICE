@@ -1,0 +1,27 @@
+MMA C++ provenance and copyright notice
+========================================
+
+Original MMA/GCMMA MATLAB implementation
+  Copyright (c) 2006-2009 Krister Svanberg
+  Distributed under GNU GPL version 3 or later.
+  https://www.smoptit.se/
+
+Public Python port and code-lineage reference
+  GCMMA-MMA-Python by Arjen Deetman
+  Copyright (c) 2020-2025 Arjen Deetman
+  Distributed under GNU GPL version 3 or later.
+  https://github.com/arjendeetman/GCMMA-MMA-Python
+
+C++ port and subsequent modifications
+  Copyright (c) 2019-2026 Sivasankar Arul
+
+The historical record does not identify whether the 2019 C++ port was made
+directly from Svanberg's MATLAB distribution or via the contemporaneous Python
+port. Both are acknowledged to avoid understating the derived code lineage.
+
+The current linear_solver.cpp and linear_solver.h are newly written for this
+repository. They replace an earlier Crout implementation that matched an
+unlicensed third-party code example and is no longer part of the current tree.
+
+The complete work is licensed under GNU GPL version 3 or, at your option, any
+later version. See LICENSE.

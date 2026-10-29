@@ -1,19 +1,10 @@
-/*
- * main.cpp
- *
- *  Created on: Nov 19, 2019
- *      Author: siv0021
- */
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Canonical MMA toy problem originally published by Krister Svanberg.
 
-#include "main.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdio>
+#include "mma.h"
+#include "toy2.h"
+
 #include <iostream>
-#include <iostream>
-#include <cstdlib>
-#include <cstring>
-#include <bits/stdc++.h>
 #include <vector>
 using namespace std;
 
@@ -21,11 +12,6 @@ int main() {
 
 	int m =2;
 	int n = 3;
-	double epsimin = 0.0000001;
-
-    vector<double> aa;aa.resize(12);
-	vector<double> eeen = { 1.0,1.0,1.0 };
-	vector<double> eeem = { 1.0,1.0 };
 	vector<double> zeron = { 0.0,0.0,0.0 };
 	vector<double> zerom = { 0.0,0.0 };
 
@@ -49,9 +35,9 @@ int main() {
 
 	double a0 = 1;
 	vector<double> a = zerom;
-	double outeriter = 0.0;
-	double maxoutit  = 11;
-	double kktol     = 0.0;
+	int outeriter = 0;
+	const int maxoutit = 100;
+	const double kkttol = 1.0e-7;
 	double move = 1.0;
 	f0val.resize(1);
 	df0dx.resize(3);
@@ -61,9 +47,11 @@ int main() {
     double out_zet = 0.0;
 	toy2(xval,f0val,df0dx,fval,dfdx );
 
-double kkttol = 0.0; double kktnorm = 10; int outit = 0;
+double kktnorm = kkttol + 10.0;
+int outit = 0;
 while (kktnorm>kkttol && outit < maxoutit){
 	outit++;
+	outeriter++;
 	mma_main1( n,m,outeriter,xval,xmin,xmax,xold1,
 					xold2,f0val,df0dx,fval,dfdx,low,
 					upp,a0,a,c_MMA,d,move,
@@ -72,10 +60,14 @@ while (kktnorm>kkttol && outit < maxoutit){
 	xold1=xval;
 	xval=xmma;
 	toy2(xval,f0val,df0dx,fval,dfdx );
-	kktcheck(m,n,xmma,ymma,zmma,out_lam,out_xsi,out_eta,out_mu,out_zet,out_s,xmin,xmax,df0dx,fval,dfdx,a0,a,c_MMA,d);
+	kktnorm = kktcheck(m,n,xmma,ymma,zmma,out_lam,out_xsi,out_eta,out_mu,out_zet,out_s,xmin,xmax,df0dx,fval,dfdx,a0,a,c_MMA,d);
 }
-cout<< "MMA done";
-cout<< "\n";
-cout<< xmma[0]<< "\t"<<xmma[1]<<"\t"<<xmma[2];
+if (kktnorm > kkttol) {
+	cerr << "MMA failed to converge after " << outit << " iterations\n";
+	return 1;
+}
+cout << "MMA done after " << outit << " iterations\n";
+cout << "KKT norm: " << kktnorm << "\n";
+cout << xmma[0] << "\t" << xmma[1] << "\t" << xmma[2] << "\n";
 	return 0;
 }

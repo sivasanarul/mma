@@ -1,24 +1,12 @@
-/*
- * toy2.cpp
- *
- *  Created on: Nov 19, 2019
- *      Author: siv0021
- */
+// SPDX-License-Identifier: GPL-3.0-or-later
+// C++ translation of Krister Svanberg's canonical toy2.m example.
 
 
 
 
 #include "toy2.h"
-#include <algorithm>
 #include <cmath>
-#include <cstdio>
-#include <iostream>
-#include <iostream>
-#include <cstdlib>
-#include <cstring>
-#include <bits/stdc++.h>
 #include <vector>
-#include <numeric>
 using namespace std;
 
 void toy2(vector<double> &xval,vector<double> &f0val,vector<double> &df0dx, vector<double> &fval,vector<double> &dfdx){
@@ -31,7 +19,7 @@ void toy2(vector<double> &xval,vector<double> &f0val,vector<double> &df0dx, vect
 	double fval1=0,fval2 = 0;
 
 	vector <double> dfdx1,dfdx2;
-	for (int i=0;i<xval.size();i++){
+	for (std::size_t i=0;i<xval.size();i++){
 		fval1+=(xval[i] - fconst1[i])*(xval[i] - fconst1[i]);
 		fval2+=(xval[i] - fconst2[i])*(xval[i] - fconst2[i]);
         dfdx1.push_back(2*(xval[i] - fconst1[i]));
@@ -44,16 +32,10 @@ void toy2(vector<double> &xval,vector<double> &f0val,vector<double> &df0dx, vect
 	fval = {fval1,fval2};
 
 	dfdx.resize(6);
-	for(int i=0;i<dfdx1.size();i++){
+	for(std::size_t i=0;i<dfdx1.size();i++){
 		dfdx[2*i] = dfdx1[i];
 		dfdx[2*i + 1] =  dfdx2[i];
 	}
-
-
-
-	//cout<< std::inner_product( xval.begin(), xval.end(), fconst1.begin(), 0 )<<endl;
-	cout << "evaluating function"<< endl;
-
 
 
 

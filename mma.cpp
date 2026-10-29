@@ -1,20 +1,15 @@
-//============================================================================
-// Name        : MMA.cpp
-// Author      :
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
-//============================================================================
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// C++ port of the GPL-licensed MMA implementation by Krister Svanberg.
+// See NOTICE for provenance, copyright, and citation information.
 
-#include <iostream>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cmath>
-#include <bits/stdc++.h>
-#include <vector>
 #include "mma.h"
+#include "linear_solver.h"
 
+#include <algorithm>
+#include <cmath>
+#include <stdexcept>
+#include <vector>
 
 using namespace std;
 
@@ -23,7 +18,10 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 		vector<double> &upp, double a0, vector<double> &a, vector<double> &c_MMA, vector<double> &d, double move,
 		vector<double> &xmma,vector<double> &ymma,double &zmma,vector<double> &lamma,vector<double> &xsimma,
 		vector<double> &etamma,vector<double> &mumma,double &zetmma,vector<double> &smma,vector<double> &out_low,vector<double> &out_upp){
-	cout << "Hello MMA1234!!!" << endl; // prints Hello World!!!
+	(void)f0val;
+	if (m <= 0 || n <= 0 || m >= n) {
+		throw std::invalid_argument("the current MMA solver requires 0 < m < n");
+	}
 
 
 	double xmamieps = 0.00001;
@@ -52,10 +50,10 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 	vector<double> grad = {}; grad.resize(m);
 	vector<double> hess = {}; hess.resize(m*m);
 
-	vector<double> gx = {}; gx.resize(4);
-	double sum_volume,delz = 0;
+	vector<double> gx = {}; gx.resize(m);
+	double delz = 0;
 	vector<double> dely,  dellam, diagx, diagxinv, diagy, diagyinv, diaglam, diaglamyi = {};
-	dely.resize(m); dellam.resize(n); diagx.resize(n); diagxinv.resize(n); diagy.resize(m); diagyinv.resize(m);
+	dely.resize(m); dellam.resize(m); diagx.resize(n); diagxinv.resize(n); diagy.resize(m); diagyinv.resize(m);
 	diaglam.resize(m);diaglamyi.resize(m);
 
 	for (int i = 0; i<m; i++) {
@@ -157,7 +155,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 	vector<double> xsi = {}; xsi.resize(n);
 	vector<double> eta = {}; eta.resize(n);
 	vector<double> epsvecn = {}; epsvecn.resize(n);
-	vector<double> epsvecm = {}; epsvecm.resize(n);
+	vector<double> epsvecm = {}; epsvecm.resize(m);
 	vector<double> norm_max; norm_max.resize(9);
 	vector<double> pjlam, qjlam, gvec; pjlam.resize(n);qjlam.resize(n);gvec.resize(n);
 	vector<double> rex, rey , relam, rexsi, reeta, remu, res = {};
@@ -187,8 +185,6 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 	}
 	double tol = epsimin; // 1.0e-9*sqrt(m+n);
 	double epsi = 1.0;
-	double err = 1.0;
-	int loop;
 
 	while (epsi > tol) {
 		for (int i = 0; i<n; i++) {
@@ -360,8 +356,8 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 			}
 			vector<double> AAr1; vector<double> AAr2;
 			vector<double> solution; solution.resize(bb.size());
-			LU_solver(AA,bb,solution);
-			vector<double> ggdotdlam = {}; ggdotdlam.resize(3);
+			solve_linear_system(AA,bb,solution);
+			vector<double> ggdotdlam = {}; ggdotdlam.resize(n);
 			std::copy(solution.begin(),solution.begin() +m,dlam.begin());
 			dz = solution[m];
 
@@ -375,7 +371,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 				deta[i] = -eta[i] + epsvecn[i]/(beta[i]-x_intermediate[i]) + (eta[i]*dx[i])/(beta[i]-x_intermediate[i]);
 
 			}
-			dzet = -zet + epsi/z - dz/z;
+			dzet = -zet + epsi/z - zet*dz/z;
 			for(int i=0;i<m;i++){
 			   dy[i] = -dely[i]/diagy[i]+ dlam[i]/diagy[i];
 			   ds[i]   = -s[i] + epsvecm[i]/lam[i] - (s[i]*dlam[i])/lam[i];
@@ -454,7 +450,7 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 				}
 				for (int i=0;i<n;i++){
 					xsi[i] = xsiold[i] + steg*dxsi[i];
-					x_intermediate[i]   = x_intermediate[i] + steg*dx[i];
+					x_intermediate[i] = xold[i] + steg*dx[i];
 					eta[i]   =  etaold[i] + steg*deta[i];
 				}
 				z = zold + steg*dz;
@@ -525,9 +521,6 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 			norm_max[7]= rez;
 			norm_max[8]= rezet;
 			residmax = *max_element(norm_max.begin(),norm_max.end());
-			cout << "so far so good";
-
-
 		}
 		epsi = 0.1*epsi;
 	}
@@ -543,19 +536,25 @@ void mma_main1(int n,int m, int outeriter, vector<double> &xval, vector<double> 
 	out_low=(low);
 	out_upp=(upp);
 
-	cout << "Hello MMA!!!" << endl;
-
 }
 
-void kktcheck(int m,int n,vector<double> xmma,vector<double> ymma, double zmma, vector<double>out_lam,
+double kktcheck(int m,int n,vector<double> xmma,vector<double> ymma, double zmma, vector<double>out_lam,
 		vector<double> out_xsi, vector<double> out_eta,vector<double> out_mu,double out_zet,vector<double> out_s,
 		vector<double> xmin,vector<double> xmax,vector<double> df0dx, vector<double> fval,vector<double> dfdx,
 		double a0,vector<double> a,vector<double> c_MMA,vector<double> d){
-	cout<< "kkt check";
 	vector<double> rex, rey , relam, rexsi, reeta, remu, res,norm_max = {}; norm_max.resize(9);
 	rex.resize(n);rey.resize(m);relam.resize(m);rexsi.resize(n);reeta.resize(n);remu.resize(m);res.resize(m);
 	double  rez,rezet  =0.0;
-	double norm_rex, norm_rey, norm_rez, norm_relam, norm_rexsi, norm_reeta, norm_remu, norm_rezet, norm_res, norm_sum = 0.0;
+	double norm_rex = 0.0;
+	double norm_rey = 0.0;
+	double norm_rez = 0.0;
+	double norm_relam = 0.0;
+	double norm_rexsi = 0.0;
+	double norm_reeta = 0.0;
+	double norm_remu = 0.0;
+	double norm_rezet = 0.0;
+	double norm_res = 0.0;
+	double norm_sum = 0.0;
 	vector<double> dfdx_lam; dfdx_lam.resize(n);
 	for (int i = 0; i<n; i++) {
 		double sum_1 = 0.0;
@@ -607,6 +606,6 @@ void kktcheck(int m,int n,vector<double> xmma,vector<double> ymma, double zmma, 
 	norm_max[6]= *max_element(res.begin(),res.end());
 	norm_max[7]= rez;
 	norm_max[8]= rezet;
-	double residmax = *max_element(norm_max.begin(),norm_max.end());
+	return norm_sum;
 }
 

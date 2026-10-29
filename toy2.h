@@ -1,22 +1,9 @@
-/*
- * toy2.h
- *
- *  Created on: Nov 19, 2019
- *      Author: siv0021
- */
+// SPDX-License-Identifier: GPL-3.0-or-later
+// C++ translation of Krister Svanberg's canonical toy2.m example.
 
 #ifndef TOY2_H_
 #define TOY2_H_
 
-#include "main.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdio>
-#include <iostream>
-#include <iostream>
-#include <cstdlib>
-#include <cstring>
-#include <bits/stdc++.h>
 #include <vector>
 using namespace std;
 
